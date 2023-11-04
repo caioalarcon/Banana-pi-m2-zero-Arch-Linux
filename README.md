@@ -1,13 +1,14 @@
 # Arch Linux Installation on Banana Pi M2 Zero (Headless Setup)
 
 ## Overview
-This README provides instructions for installing Arch Linux on a Banana Pi M2 Zero using an SD card without a display. It involves setting up the system using QEMU user-mode emulation and `chroot`.
+This README provides instructions for installing Arch Linux on a Banana Pi M2 Zero using an SD card without a display. It involves setting up the system using QEMU user-mode emulation and `chroot`, and includes steps for accessing the system via the serial debug port.
 
 ## Prerequisites
 - A Linux host system with Arch Linux
 - QEMU user-mode emulation package
 - `binfmt_misc` support in the kernel
 - An SD card with at least 16GB of storage
+- A serial-to-USB adapter if you plan on using the serial debug port
 
 ## Instructions
 
@@ -67,8 +68,22 @@ mkimage -A arm -O linux -T script -C none -n "Boot.scr" -d boot.cmd boot.scr
 sudo dd if=u-boot-sunxi-with-spl.bin of=/dev/mmcblk0 bs=1024 seek=8
 ```
 
-### Step 8: First Boot and System Configuration
-After inserting the SD card into the Banana Pi and starting it up, SSH into the device using the default credentials.
+### Step 8: Accessing the Terminal via Serial Debug Port
+To access the terminal through the Banana Pi's serial debug port, connect the serial-to-USB adapter to the debug pins on the Banana Pi. Use a terminal emulator like `screen` or `minicom` on your host system to interact with the Banana Pi:
+
+```bash
+screen /dev/ttyUSB0 115200
+```
+
+This command will open a terminal session to the Banana Pi, replace `/dev/ttyUSB0` with the actual device your serial adapter is recognized as.
+
+### Step 9: First Boot and System Configuration
+After inserting the SD card into the Banana Pi and starting it up, connect via SSH or the serial debug port using the following default credentials:
+
+- Default user: `alarm`
+- Password: `alarm`
+- Default root user: `root`
+- Password: `root`
 
 Initialize the keyring and update the system:
 ```bash
@@ -79,19 +94,14 @@ pacman -Syu
 
 Install and configure essential services like network managers.
 
-### Step 9: Clean Up
-Before unmounting the SD card, remember to remove the QEMU binary from the system:
-```bash
-sudo rm /mnt/banana/usr/bin/qemu-arm-static
-```
-
-Unmount the SD card:
+### Step 10: Clean Up
+Before unmounting the SD card:
 ```bash
 sudo umount /mnt/banana
 ```
 
 ## Conclusion
 You should now have a working Arch Linux installation on your Banana Pi M2 Zero. This guide omits setting up peripherals and focuses on the initial installation and configuration. For further customization and peripheral setup, consult the Arch Linux ARM community and documentation.
-```
+
 
 Remember to replace `/dev/mmcblk0` with the actual device name of your SD
