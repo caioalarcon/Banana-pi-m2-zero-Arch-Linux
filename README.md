@@ -47,10 +47,36 @@ sudo bsdtar -xpf ArchLinuxARM-armv7-latest.tar.gz -C /mnt/banana
 ```
 
 ### Step 5: Configure the System with QEMU and `chroot`
-Copy QEMU ARM static binary to the mounted partition:
+
+To prepare the system for `chroot`, we need to enable ARM binary execution and bind the necessary directories. This allows the ARM environment to use the devices and filesystems of the host machine.
+
+First, bind the necessary directories:
+
+```bash
+sudo mount --bind /dev /mnt/banana/dev
+sudo mount --bind /sys /mnt/banana/sys
+sudo mount --bind /proc /mnt/banana/proc
+sudo mount --bind /dev/pts /mnt/banana/dev/pts
+sudo cp /etc/resolv.conf /mnt/banana/etc/resolv.conf
+```
+
+These commands bind the `/dev`, `/sys`, `/proc`, and `/dev/pts` directories from your host system to the equivalent directories on the Banana Pi filesystem. This is necessary for the ARM environment to access hardware devices and system information as if it were running directly on the hardware. Copying `resolv.conf` allows the `chroot` environment to use the host's DNS settings for network operations.
+
+Now you can copy the QEMU ARM static binary to the mounted partition:
+
 ```bash
 sudo cp /usr/bin/qemu-arm-static /mnt/banana/usr/bin/
 ```
+
+Finally, you can `chroot` into your Banana Pi filesystem:
+
+```bash
+sudo chroot /mnt/banana /usr/bin/qemu-arm-static /bin/bash
+```
+
+With this step, you are now operating inside the Banana Pi's filesystem and can execute ARM binaries with the help of QEMU, allowing you to configure the system as if you were natively running it on the ARM hardware.
+
+
 
 `chroot` into the system:
 ```bash
@@ -92,9 +118,6 @@ pacman-key --populate archlinuxarm
 pacman -Syu
 ```
 
-Certainly! To set up your Banana Pi as a WiFi access point (AP), you will need to configure the hostapd and DHCP server while you're chrooted into the system. Here's how you can add that section to your `README.md`:
-
-```markdown
 ## Configuring WiFi Access Point and SSH
 
 ### Step 11: Install Access Point and DHCP Server Software
