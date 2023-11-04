@@ -92,15 +92,132 @@ pacman-key --populate archlinuxarm
 pacman -Syu
 ```
 
-Install and configure essential services like network managers.
+Certainly! To set up your Banana Pi as a WiFi access point (AP), you will need to configure the hostapd and DHCP server while you're chrooted into the system. Here's how you can add that section to your `README.md`:
 
-### Step 10: Clean Up
+```markdown
+## Configuring WiFi Access Point and SSH
+
+### Step 11: Install Access Point and DHCP Server Software
+While still `chroot`ed into the system, install the necessary packages to create a wireless access point and DHCP server:
+
+```bash
+pacman -S hostapd dhcp
+```
+
+### Step 12: Configure hostapd
+Create and edit the hostapd configuration file:
+
+```bash
+cat > /etc/hostapd/hostapd.conf <<EOF
+interface=wlan0
+driver=nl80211
+ssid=BananaPi-AP
+hw_mode=g
+channel=7
+wmm_enabled=0
+macaddr_acl=0
+auth_algs=1
+ignore_broadcast_ssid=0
+wpa=2
+wpa_passphrase=YourPassword
+wpa_key_mgmt=WPA-PSK
+wpa_pairwise=TKIP
+rsn_pairwise=CCMP
+EOF
+```
+
+Replace `YourPassword` with a secure passphrase for your access point.
+
+Enable and start hostapd:
+
+```bash
+systemctl enable hostapd
+systemctl start hostapd
+```
+
+### Step 13: Configure DHCP
+Set up the DHCP server by configuring `dhcpd.conf`. Make sure to define the subnet, range of IPs to be assigned, and other settings as per your network configuration.
+
+```bash
+cat > /etc/dhcpd.conf <<EOF
+default-lease-time 600;
+max-lease-time 7200;
+ddns-update-style none;
+
+authoritative;
+
+subnet 10.0.0.0 netmask 255.255.255.0 {
+    range 10.0.0.2 10.0.0.20;
+    option broadcast-address 10.0.0.255;
+    option routers 10.0.0.1;
+    default-lease-time 600;
+    max-lease-time 7200;
+    option domain-name "local";
+    option domain-name-servers 8.8.8.8, 8.8.4.4;
+}
+EOF
+```
+
+Enable and start dhcpd service:
+
+```bash
+systemctl enable dhcpd4.service
+systemctl start dhcpd4.service
+```
+
+### Step 14: Enable SSH
+Enable and start the SSH daemon:
+
+```bash
+systemctl enable sshd
+systemctl start sshd
+```
+
+You can also edit `/etc/ssh/sshd_config` if you need to make changes to the default SSH configuration.
+
+### Step 15: Configure Network Interface
+Set up a static IP for your wlan0 interface. You will need to create a network configuration file:
+
+```bash
+cat > /etc/systemd/network/wlan0.network <<EOF
+[Match]
+Name=wlan0
+
+[Network]
+Address=10.0.0.1/24
+DHCPServer=yes
+EOF
+```
+
+Enable and start systemd-networkd:
+
+```bash
+systemctl enable systemd-networkd
+systemctl start systemd-networkd
+```
+
+### Step 16: Clean Up
 Before unmounting the SD card:
 ```bash
 sudo umount /mnt/banana
 ```
 
 ## Conclusion
+With the wireless access point configured and the SSH service running, after booting your Banana Pi you can connect your computer to the SSID "BananaPi-AP" with the passphrase "YourPassword". Once connected, you can SSH into the Banana Pi using the default credentials:
+
+- SSID: `BananaPi-AP`
+- Passphrase: `YourPassword`
+- SSH User: `alarm`
+- SSH Password: `alarm`
+- IP: `10.0.0.1`
+
+You can now fully manage your Banana Pi without the need for a USB serial adapter or direct network connection.
+```
+
+Replace `10.0.0.1` with the static IP you want the Banana Pi to use within the subnet defined in the DHCP configuration, and `wlan0` with the actual interface name if it is different. Adjust the DHCP server settings (like IP range and default gateway) according to your requirements. Make sure the wireless interface supports the AP mode.
+
+Be aware that not all WiFi chips support AP mode, especially on ARM devices, so ensure your Banana Pi's WiFi chipset is capable of this. If the built-in WiFi cannot be used as an AP, you may need a compatible USB WiFi dongle.
+
 You should now have a working Arch Linux installation on your Banana Pi M2 Zero. This guide omits setting up peripherals and focuses on the initial installation and configuration. For further customization and peripheral setup, consult the Arch Linux ARM community and documentation.
 
 
